@@ -1,4 +1,3 @@
-Trus kode yang ini?
 import discord
 from discord.ext import commands
 import os
@@ -62,7 +61,7 @@ def buat_embed_jadwal(tahun=2026, bulan=11):
             teks += f"- {tgl} {nama_bulan.title()} {tahun}, {hari} : {event['nama']} , {event['jam']}✅\n"
         else:
             teks += f"- {tgl} {nama_bulan.title()} {tahun}, {hari}\n"
-    embed = discord.Embed(title=f"📅 INVITATION SON — {nama_bulan} {tahun}", description=f"```\n{teks}\n```", color=0xFF0000) # Merah SON
+    embed = discord.Embed(title=f"📅 INVITATION SON — {nama_bulan} {tahun}", description=f"```\n{teks}\n```", color=0xFF0000)
     embed.set_footer(text="SPIRIT OF NUSANTARA • SON")
     return embed
 
@@ -234,20 +233,30 @@ async def buat_undangan_son(interaction: discord.Interaction):
         return
     await interaction.response.send_modal(BuatUndanganSONModal())
 
-@bot.tree.command(name="setup-son", description="Bikin channel SON (Owner only)")
+# --- INI YANG DI EDIT: SETUP-SON ---
+@bot.tree.command(name="setup-son", description="Bikin channel SON (Owner & Admin)")
 async def setup_son(interaction: discord.Interaction):
-    if interaction.user.id != interaction.guild.owner_id:
-        await interaction.response.send_message("❌ Hanya Owner!", ephemeral=True)
+    # EDIT 1: Owner + Admin bisa, bukan Owner only lagi
+    if not interaction.user.guild_permissions.administrator and interaction.user.id != interaction.guild.owner_id:
+        await interaction.response.send_message("❌ Hanya Owner & Admin!", ephemeral=True)
         return
     await interaction.response.defer(ephemeral=True)
     guild = interaction.guild
-    # Hapus channel lama SON kalo ada
+
+    # EDIT 2: Nama channel gaya kaya punya kamu, pakai " | " bukan "┆・"
+    # Tetep cuma 2 channel aja!
+    nama_jadwal = "📅 | Schedule • SON"
+    nama_undangan = "🔥 | Undangan • SON"
+
+    # Hapus channel lama SON kalo ada (versi lama + versi baru biar gak dobel)
+    nama_lama = ["jadwal-son", "undangan-son", "📅┆・jadwal-son", "🔥┆・undangan-son", "🇮🇩┆・son", nama_jadwal.lower(), nama_undangan.lower()]
     for ch in list(guild.channels):
-        if ch.name in ["jadwal-son", "undangan-son", "📅┆・jadwal-son", "🔥┆・undangan-son", "🇮🇩┆・son"]:
+        if ch.name.lower() in nama_lama:
             try: await ch.delete()
             except: pass
-    ch1 = await guild.create_text_channel("📅┆・jadwal-son")
-    ch2 = await guild.create_text_channel("🔥┆・undangan-son")
+
+    ch1 = await guild.create_text_channel(nama_jadwal)
+    ch2 = await guild.create_text_channel(nama_undangan)
     await ch1.send(view=SONPanelLayout())
     msg = await ch1.send(embed=buat_embed_jadwal(2026, 11), view=JadwalSONView())
     try: await msg.pin()
